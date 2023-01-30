@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//---------------------------------------
+//TODO: implementar correctamente el borrado logico de las tablas
+//---------------------------------------
+model User {
+  id             String        @id @default(uuid())
+  fullName       String?
+  userName       String        @unique
+  email          String        @unique
+  access         Access?
+  profilePicture Json
+  city           String?
+  country        String?
+  isAdmin        Boolean       @default(false)
+  isActive       Boolean       @default(true)
+  isBanned       Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  Review         Review[]
+  Transaction    Transaction[]
+  wishList       Json[]
+}
+
+model Access {
+  id       Int    @default(autoincrement())
+  password String
+  userId   String @unique
+  User     User   @relation(fields: [userId], references: [id])
+}
+
+model CompanyAccess {
+  id       Int     @default(autoincrement())
+  password String
+  userId   String  @unique
+  User     Company @relation(fields: [userId], references: [id])
+}
+
+model Company {
+  id             String         @id @default(uuid())
+  name           String         @unique
+  email          String         @unique
+  access         CompanyAccess?
+  profilePicture Json
+  owner          String
+  city           String
+  country        String
+  plan           PlanType       @default(Basic)
+  priority       Int            @default(3)
+  products       Product[]
+  transactions   Transaction[]
+  isActive       Boolean        @default(true)
+  isBanned       Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model Plan {
+  id                  Int      @id @default(autoincrement())
+  planType            PlanType @unique
+  description         String
+  productsLimit       Int
+  activeProductsLimit Int
+  productPriority     Int
+  price               Int
+
+  @@index([productPriority])
+}
+
+enum PlanType {
+  Basic
+  Standard
+  Premium
+}
+
+model Product {
+  id             Int           @id @default(autoincrement())
+  name           String
+  slug           String        @unique //id-name
+  description    String
+  price          Float
+  mainImage      Json
+  carouselImages Json?
+  averageRating  Float?        @default(0)
+  reviewsCount   Int?          @default(0)
+  stock          Int
+  isVisible      Boolean
+  isActive       Boolean       @default(true)
+  company        Company       @relation(fields: [companyId], references: [id])
+  companyId      String
+  category       String
+  reviews        Review[]
+  transactions   Transaction[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([name, description])
+}
+
+model Review {
+  id           String   @id @default(uuid())
+  commentBody  String
+  rating       Float
+  user         User?    @relation(fields: [userId], references: [id])
+  userId       String?
+  product      Product? @relation(fields: [productId], references: [id])
+  productId    Int?
+  createdAt    DateTime @default(now())
+}
+
+model Transaction {
+  id            String   @id @default(uuid())
+  company       Company  @relation(fields: [companyId], references: [id])
+  companyId     String
+  user          User     @relation(fields: [userId], references: [id])
+  userId        String
+  product       Product  @relation(fields: [productId], references: [id])
+  productId     Int
+  productAmount Int
+  createdAt     DateTime @default(now())
+}
